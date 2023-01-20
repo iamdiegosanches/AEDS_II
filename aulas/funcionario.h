@@ -10,8 +10,6 @@
 typedef struct Funcionario {
     int cod;
     char nome[50];
-    char cpf[15];
-    char data_nascimento[11];
     double salario;
 } TFunc;
 
@@ -19,7 +17,7 @@ typedef struct Funcionario {
 void imprime(TFunc *func);
 
 // Cria funcionario. Lembrar de usar free(funcionario)
-TFunc *funcionario(int cod, char *nome, char *cpf, char *data_nascimento, double salario);
+TFunc *funcionario(int cod, char *nome, double salario);
 
 // Salva funcionario no arquivo out, na posicao atual do cursor
 void salva(TFunc *func, FILE *out);
@@ -29,7 +27,11 @@ void salva(TFunc *func, FILE *out);
 TFunc *le(FILE *in);
 
 // Retorna tamanho do funcionario em bytes
-int tamanho();
+int tamanho_registro();
+
+
+int tamanho_arquivo(FILE *arq) ;
+
 
 
 #endif // FUNCIONARIO_H_INCLUDED
