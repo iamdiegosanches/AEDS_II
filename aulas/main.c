@@ -133,6 +133,72 @@ TFunc *busca_binaria(int chave, FILE *in, int inicio, int fim) {
     else return NULL;
 }
 
+void insertion_sort_disco(FILE *arq, int tam) {
+    int i;
+    //faz o insertion sort
+    for (int j = 2; j <= tam; j++) {
+        //posiciona o arquivo no registro j
+        fseek(arq, (j-1) * tamanho_registro(), SEEK_SET);
+        TFunc *fj = le(arq);
+        printf("\n********* Funcionario atual: %d\n", fj->cod);
+        i = j - 1;
+        //posiciona o cursor no registro i
+        fseek(arq, (i-1) * tamanho_registro(), SEEK_SET);
+        TFunc *fi = le(arq);
+        printf("fi = %d\n", fi->cod);
+        while ((i > 0) && (fi->cod > fj->cod)) {
+            //posiciona o cursor no registro i+1
+            fseek(arq, i * tamanho_registro(), SEEK_SET);
+            printf("Salvando funcionario %d na posicao %d\n", fi->cod, i+1);
+            salva(fi, arq);
+            i = i - 1;
+            //lÃª registro i
+            fseek(arq, (i-1) * tamanho_registro(), SEEK_SET);
+            fi = le(arq);
+            printf("fi = %d; i = %d\n", fi->cod, i);
+        }
+        //posiciona cursor no registro i + 1
+        fseek(arq, (i) * tamanho_registro(), SEEK_SET);
+        printf("*** Salvando funcionario %d na posicao %d\n", fj->cod, i+1);
+        //salva registro j na posiÃ§Ã£o i
+        salva(fj, arq);
+    }
+    //descarrega o buffer para ter certeza que dados foram gravados
+    fflush(arq);
+}
+
+void insertion_sort(FILE *arq, int tam) {
+    TFunc *v[tam - 1];
+    //le o arquivo e coloca no vetor
+    rewind(arq); //posiciona cursor no inicio do arquivo
+    TFunc *f = le(arq);
+    int i = 0;
+    while (!feof(arq)) {
+        v[i] = f;
+        f = le(arq);
+        i++;
+    }
+    //faz o insertion sort
+    for (int j = 1; j < tam; j++) {
+        TFunc *f = v[j];
+        i = j - 1;
+        while ((i >= 0) && (v[i]->cod > f->cod)) {
+            v[i + 1] = v[i];
+            i = i - 1;
+        }
+        v[i+1] = f;
+    }
+    //grava vetor no arquivo, por cima do conteÃºdo anterior
+    rewind(arq);
+    for (int i = 0; i < tam; i++) {
+        salva(v[i], arq);
+    }
+    //descarrega o buffer para ter certeza que dados foram gravados
+    fflush(arq);
+
+}
+
+
 int main(int argc, char** argv) {
     //declara ponteiro para arquivo
     FILE *out;
@@ -172,5 +238,8 @@ void MSG_MENU()
 void MENU(FILE *in)
 {
     int opcao=0;
+    MSG_MENU();
+
 
 }
+
