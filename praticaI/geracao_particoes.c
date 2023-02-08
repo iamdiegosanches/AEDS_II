@@ -139,6 +139,7 @@ void selecao_com_substituicao(char * nome_arquivo_entrada, Lista * nome_arquivos
 
                         continue;
                     } else if (feof(arq) && M - frozen > 0) {
+                        v[ind_min]->frozen = 1;
                         continue;
                     }
                     //close output partition
