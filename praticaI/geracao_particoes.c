@@ -149,6 +149,7 @@ void selecao_com_substituicao(char * nome_arquivo_entrada, Lista * nome_arquivos
                 //unfreeze frozen records
                 for (i = 0; i < M; i++) {
                     v[i]->frozen = 0;
+                    frozen--;
                 }
             }
             if (feof(arq) && frozen < M) {
