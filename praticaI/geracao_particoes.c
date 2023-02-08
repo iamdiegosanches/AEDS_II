@@ -124,14 +124,14 @@ void selecao_com_substituicao(char * nome_arquivo_entrada, Lista * nome_arquivos
                     salva(menor, p);
                     
                     if (cin != NULL) {
-                        v[ind_min = le(arq);
+                        v[ind_min] = le(arq);
                         cin = le_arq(arq);
                     }
 
                     //replace the record with the smallest key with the next record from input file
                     if (!feof(arq)) {
                         if (cin != NULL) {
-                            if (cin->cod < menor->cod) {
+                            if (v[ind_min]->cod < menor->cod) {
                                 v[ind_min]->frozen = 1;
                                 frozen++;
                             }
