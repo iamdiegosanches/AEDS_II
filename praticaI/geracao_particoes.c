@@ -102,7 +102,6 @@ void selecao_com_substituicao(char * nome_arquivo_entrada, Lista * nome_arquivos
         int frozen = 0;
         TFunc *menor;
         //Loop enquanto ainda tem registro descongelados
-        // Precisa de um loop aqui para abrir nova partição
         //open output partition for writing
         while (!fim) {
             char *nome_particao = nome_arquivos_saida->nome;
@@ -123,11 +122,14 @@ void selecao_com_substituicao(char * nome_arquivo_entrada, Lista * nome_arquivos
                     menor = v[ind_min]->func;
                     //write the record with the smallest key to output partition
                     salva(menor, p);
+                    
+                    if (cin != NULL) {
+                        v[ind_min = le(arq);
+                        cin = le_arq(arq);
+                    }
 
                     //replace the record with the smallest key with the next record from input file
                     if (!feof(arq)) {
-                        cin = le(arq);
-                        v[ind_min]->func = cin;
                         if (cin != NULL) {
                             if (cin->cod < menor->cod) {
                                 v[ind_min]->frozen = 1;
