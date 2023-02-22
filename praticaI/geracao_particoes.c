@@ -1,95 +1,35 @@
 #include "geracao_particoes.h"
-#include "funcionario.h"
-//#include "intercalacao.h"
-
-void classificacao_interna(char *nome_arquivo_entrada, Lista *nome_arquivos_saida, int M) {
-
-    int fim = 0; //variável de controle para saber se arquivo de entrada terminou
-    FILE *arq; //declara ponteiro para arquivo
-
-    //abre arquivo para leitura
-    if ((arq = fopen(nome_arquivo_entrada, "rb")) == NULL) {
-        printf("Erro ao abrir arquivo de entrada\n");
-    } else {
-
-        //le primeiro cliente
-        TFunc *cin = le(arq);
-
-        while (!(fim)) {
-            //le o arquivo e coloca no vetor
-            TFunc *v[M];
-
-            int i = 0;
-            while (!feof(arq) && i < M) {
-                v[i] = cin;
-                cin = le(arq);
-                i++;
-            }
-
-            //ajusta tamanho M caso arquivo de entrada tenha terminado antes do vetor
-            if (i != M) {
-                M = i;
-            }
-
-            //faz ordenacao
-            for (int j = 1; j < M; j++) {
-                TFunc *c = v[j];
-                i = j - 1;
-                while ((i >= 0) && (v[i]->cod > c->cod)) {
-                    v[i + 1] = v[i];
-                    i = i - 1;
-                }
-                v[i + 1] = c;
-            }
-
-            //cria arquivo de particao e faz gravacao
-            char *nome_particao = nome_arquivos_saida->nome;
-            nome_arquivos_saida = nome_arquivos_saida->prox;
-
-            printf("\n%s\n", nome_particao);
-
-            FILE *p;
-            if ((p = fopen(nome_particao, "wb")) == NULL) {
-                printf("Erro criar arquivo de saida\n");
-            } else {
-                for (int i = 0; i < M; i++) {
-                    salva(v[i], p);
-                    imprime(v[i]);
-                }
-                fclose(p);
-            }
-            if (feof(arq)) {
-                fim = 1;
-            }
-        }
-    }
-}
-
-void selecao_com_substituicao(char *nome_arquivo_entrada, Lista *nome_arquivos_saida, int M)
-{
-    return;
-}
+#include <stdio.h>
+#include <time.h>
 
 void selecao_com_substituicao(char * nome_arquivo_entrada, Lista * nome_arquivos_saida, int M) {
+    int comparacoes = 0;
     FILE * arq; //pointer to input file
     int fim = 0;
+
+    clock_t start, end;
+    double time_spent = 0.0;
+    start = clock();
 
     //open input file for reading
     if ((arq = fopen(nome_arquivo_entrada, "rb")) == NULL) {
         printf("Error opening input file\n");
     } else {
+        int i = 0;
         //Ler primeiro funcionario
         TFunc *cin = le(arq);
 
-        TFrozen *v[M]; //array to store records from input file
-        for (int i = 0; i < M; i++) {
-            v[i] = (TFrozen*)malloc(sizeof(TFrozen));
+        // Vetor para guardar os funcionarios do arquivo
+        TFunc *v[M];
+        int frozens[M];
+        for (i = 0; i < M; i++) {
+            frozens[i] = 0;
         }
-        int i = 0;
 
         //Ler M registros do arquivo para a memória
+        i = 0;
         while (!feof(arq) && i < M) {
-            v[i]->func = cin;
+            v[i] = cin;
             cin = le(arq);
             i++;
         }
@@ -99,65 +39,84 @@ void selecao_com_substituicao(char * nome_arquivo_entrada, Lista * nome_arquivos
             M = i;
         }
 
-        int frozen = 0;
+        int n_frozen = 0;
         TFunc *menor;
-        //Loop enquanto ainda tem registro descongelados
         //open output partition for writing
         while (!fim) {
             char *nome_particao = nome_arquivos_saida->nome;
             nome_arquivos_saida = nome_arquivos_saida->prox;
             FILE *p;
-
-            while (M - frozen > 0) {
                 if ((p = fopen(nome_particao, "wb")) == NULL) {
                     printf("Error creating output partition\n");
                 } else {
-                    //find the record with the smallest key
+                while (M - n_frozen > 0) {
+                    i = 0;
                     int ind_min = 0;
-                    for (int j = 1; j < M; j++) {
-                        if (v[j]->func->cod < v[ind_min]->func->cod && !v[j]->frozen) {
+                    // Tratar exececao de encontrar algum funcionario NULL ou Funcinoario congelado nas primeiras posicoes
+                    while (v[i] == NULL || frozens[i] == 1) {
+                        ind_min++;
+                        i++;
+                    }
+                    // Encontrar funcionario com mento codigo
+                    for (int j = 0; j < M; j++) {
+                        if(v[j] == NULL) {
+                            continue;
+                        }
+                        if (v[j]->cod < v[ind_min]->cod && frozens[j] == 0) {
+                            comparacoes++;
                             ind_min = j;
                         }
                     }
-                    menor = v[ind_min]->func;
-                    //write the record with the smallest key to output partition
+                    menor = v[ind_min];
+
+                    //imprime(menor);
                     salva(menor, p);
-                    
+
+                    // Substituir funcionario no vetor caso estamos no final do arquivo este sera nulo
                     if (cin != NULL) {
-                        v[ind_min] = le(arq);
-                        cin = le_arq(arq);
+                        v[ind_min] = cin;
+                        cin = le(arq);
+                    } else {
+                        v[ind_min] = NULL;
+                        n_frozen++;
                     }
 
-                    //replace the record with the smallest key with the next record from input file
-                    if (!feof(arq)) {
-                        if (cin != NULL) {
-                            if (v[ind_min]->cod < menor->cod) {
-                                v[ind_min]->frozen = 1;
-                                frozen++;
-                            }
+                    // Congelar funcionario
+                    if (v[ind_min] != NULL) {
+                        if (v[ind_min]->cod < menor->cod) {
+                            frozens[ind_min] = 1;
+                            n_frozen++;
                         }
-
-                        continue;
-                    } else if (feof(arq) && M - frozen > 0) {
-                        v[ind_min]->frozen = 1;
                         continue;
                     }
-                    //close output partition
-                    frozen++;
-                    fclose(p);
-                }
-                //unfreeze frozen records
-                for (i = 0; i < M; i++) {
-                    v[i]->frozen = 0;
-                    frozen--;
                 }
             }
-            if (feof(arq) && frozen < M) {
+
+            // Fechar particao
+            fclose(p);
+            // Descongelar
+            for (i = 0; i < M; i++) {
+                if(v[i] == NULL)
+                    continue;
+                frozens[i] = 0;
+                n_frozen--;
+            }
+
+            // Se estiver no final do arquivo e tudo resolvido
+            if (feof(arq) && n_frozen == M) {
                 fim = 1;
             }
         }
-        for (i = 0; i < M; i++) {
-            free(v[i]);
-        }
     }
+    // Calculando tempo e comparacoes
+    end = clock();
+    time_spent += (double)(end - start) / CLOCKS_PER_SEC;
+
+    FILE *out = fopen("saida_selecao.txt", "w");
+    fprintf(out, "Numero comparacoes: %d\n", comparacoes);
+    fprintf(out, "Tempo gasto: %f", time_spent);
+    fclose(out);
+
+    printf("Comparacoes: %d\n", comparacoes);
+    printf("Tempo de execucao: %f", time_spent);
 }
