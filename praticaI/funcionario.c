@@ -2,7 +2,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdarg.h>
 
 // Imprime funcionario
 void imprime(TFunc *func) {
