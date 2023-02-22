@@ -41,6 +41,13 @@ int conta_nomes(Lista *nomes)
     return qtd;
 }
 
+void adiciona_nomes(Lista *nomes, char *nome) {
+    while(0 < conta_nomes(nomes)-1) {
+        nomes = nomes->prox;
+    }
+    nomes->prox = cria_nomes(cria_str(nome), NULL);
+}
+
 void inverte_nomes(Lista *nomes)
 {
     int i;
