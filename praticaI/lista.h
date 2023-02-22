@@ -24,4 +24,7 @@ int conta_nomes(Lista *nomes);
 // Inverte lista encadeada de nomes
 void inverte_nomes(Lista *nomes);
 
+// Adiciona nome no final da lista
+void adiciona_nomes(Lista *nomes, char *nome);
+
 #endif // LISTA_H_INCLUDED
