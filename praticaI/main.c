@@ -5,12 +5,12 @@
 #include <time.h>
 
 #include "funcionario.c"
-//#include "intercalacao.c"
+#include "intercalacao.h"
 #include "geracao_particoes.h"
 #include "lista.h"
 
 //Constante para o numero de funcionarios
-#define NFUNC 100
+#define NFUNC 5000
 
 void sobrescreve_funcionario(FILE *in, int n, TFunc *f1)
 {
@@ -50,7 +50,7 @@ void insere_5000_funcionarios(FILE *out)
 {
     for(int i = 1; i <= NFUNC; i++)
     {
-        TFunc *f1 = funcionario(i, "Ana", 3000);
+        TFunc *f1 = funcionario(i, "Ana", 3000+i);
         salva(f1, out);
         free(f1);
     }
@@ -69,35 +69,28 @@ void imprime_arquivo(FILE *arq)
     }
 }
 
-void adiciona_funcionario(FILE *in)
-{
-    printf("\n\nAdicionando funcionário no final do arquivo...\n\n");
-    //pula 5 registros para posicionar no início do final do arquivo
-    fseek(in, tamanho_registro() * NFUNC, SEEK_SET);
-    TFunc *f = funcionario(6, "Bruna", 2500);
-    salva(f, in);
-    free(f);
-
-    //lê funcionário que acabou de ser gravado
-    //posiciona novamente o cursor no início desse registro
-    fseek(in, tamanho_registro() * 5, SEEK_SET);
-    TFunc *f6 = le(in);
-    if (f6 != NULL)
-    {
-        imprime(f6);
-        free(f6);
-    }
-}
-
 void busca_sequencial(FILE *in, int target) {
     TFunc *f;
+    int comparacoes = 0;
+    double tempo_gasto = 0.0;
+    clock_t inicio = clock();
     for (int i = 0; i < NFUNC; i++) {
         fseek(in, tamanho_registro() * i, SEEK_SET);
         f = le(in);
+        comparacoes++;
         if (f != NULL && f->cod == target) {
             imprime(f);
+            clock_t fim = clock();
+            tempo_gasto = (double)(fim - inicio) / CLOCKS_PER_SEC;
             // Gravar em arquivo as infos do funcionario encontrado,
             // juntamente com a quantidade de comparações realizadas e o tempo gasto para localizar o funcionarios
+            FILE *out = fopen("saida_sequencial.txt", "w");
+            fwrite(f, sizeof(TFunc), 1, out);
+            fwrite(&comparacoes, sizeof(int), 1, out);
+            fwrite(&tempo_gasto, sizeof(double), 1, out);
+            fclose(out);
+            printf("Numero de Comparacoes: %d\n", comparacoes);
+            printf("Tempo gasto na execucao: %f segundos\n", tempo_gasto);
             return;
         }
     }
@@ -108,6 +101,9 @@ TFunc *busca_binaria(int chave, FILE *in, int inicio, int fim)
 {
     TFunc *f = NULL;
     int cod = -1;
+    int comparacoes = 0;
+    double tempo_gasto = 0.0;
+    clock_t start = clock();
     while (inicio <= fim && cod != chave)
     {
         int meio = trunc((inicio + fim) / 2);
@@ -115,21 +111,29 @@ TFunc *busca_binaria(int chave, FILE *in, int inicio, int fim)
         fseek(in, (meio -1) * tamanho_registro(), SEEK_SET);
         f = le(in);
         cod = f->cod;
-        if (f)
-        {
-            if (cod > chave)
-            {
+        comparacoes++;
+        if (f) {
+            if (cod > chave) {
                 fim = meio - 1;
             }
-            else
-            {
+            else {
                 inicio = meio + 1;
             }
         }
     }
+    clock_t end = clock();
+    tempo_gasto += (double)(end - start) / CLOCKS_PER_SEC;
     if (cod == chave)
     {
+        FILE *out = fopen("saida_binaria.txt", "w");
+        fprintf(out, "Codigo: %d\n Nome: %s \n Salario: %f", f->cod, f->nome, f->salario);
+        fprintf(out, "\nNumero comparacoes: %d\n", comparacoes);
+        fprintf(out, "Tempo gasto: %f", tempo_gasto);
+
+        fclose(out);
         imprime(f);
+        printf("\nNumero de Comparacoes: %d\n", comparacoes);
+        printf("Tempo gasto na execucao: %f segundos\n", tempo_gasto);
         return f;
     }
     else return NULL;
@@ -139,6 +143,11 @@ TFunc *busca_binaria(int chave, FILE *in, int inicio, int fim)
 void insertion_sort_disco(FILE *arq, int tam)
 {
     int i;
+    int comparacoes = 0;
+    clock_t start, end;
+    double tempo_gasto = 0.0;
+
+    start = clock();
     //faz o insertion sort
     for (int j = 2; j <= tam; j++)
     {
@@ -151,6 +160,7 @@ void insertion_sort_disco(FILE *arq, int tam)
         TFunc *fi = le(arq);
         while ((i > 0) && (fi->cod > fj->cod))
         {
+            comparacoes++;
             //posiciona o cursor no registro i+1
             fseek(arq, i * tamanho_registro(), SEEK_SET);
             //printf("Salvando funcionario %d na posicao %d\n", fi->cod, i+1);
@@ -167,6 +177,16 @@ void insertion_sort_disco(FILE *arq, int tam)
     }
     //descarrega o buffer para ter certeza que dados foram gravados
     fflush(arq);
+    end = clock();
+    tempo_gasto += (double)(end - start) / CLOCKS_PER_SEC;
+
+    FILE *out = fopen("saida_insertion_sort.txt", "w");
+    fprintf(out, "Numero comparacoes: %d\n", comparacoes);
+    fprintf(out, "Tempo gasto: %f", tempo_gasto);
+    fclose(out);
+    printf("Numero de Comparacoes: %d\n", comparacoes);
+    printf("Tempo gasto na execucao: %f segundos\n", tempo_gasto);
+
 }
 
 void insertion_sort(FILE *arq, int tam)
@@ -211,7 +231,7 @@ void MSG_MENU()
     printf("  \n\t2. INSERTION SORT DISCO");
     printf("  \n\t3. INSERTION SORT MEMORIA");
     printf("  \n\t4. BUSCA SEQUENCIAL");
-    printf("  \n\t5. GERACAO DE PARTICAO");
+    printf("  \n\t5. ORDENACAO EXTERNA");
     printf("  \n\t6. BUSCA BINARIA (SOMENTE QUANDO ARQUIVO ESTA ORGANIZADO)");
     printf("  \n\t0. SAIR");
 }
@@ -226,8 +246,6 @@ void MENU(FILE *in)
         printf("\n\nDigite uma opcao: ");
         fflush(stdin);
         scanf("%d", &opcao);
-        Lista *lst = NULL;
-        lst = cria_nomes(cria_str("p1.dat"), cria_nomes(cria_str("p2.dat"), NULL));
         switch(opcao)
         {
         case 1:
@@ -254,10 +272,20 @@ void MENU(FILE *in)
             break;
         case 5:
             fclose(in);
-            classificacao_interna("funcionario.dat", lst, 50);
+            Lista *lst = NULL;
+            //lst = cria_nomes(cria_str("p1.dat"), cria_nomes(cria_str("p2.dat"),  NULL));
+            lst = cria_nomes(cria_str("p1.dat"),
+                             cria_nomes(cria_str("p2.dat"),
+                                        cria_nomes(cria_str("p3.dat"),
+                                                   cria_nomes(cria_str("p4.dat"),NULL))));
+
+            selecao_com_substituicao("funcionario.dat", lst, 800);
+            intercalacao_otima("funcionario.dat", 4, lst, 5);
+
+            printf("\nArquivo ordenado com sucesso.");
+            libera_nomes(lst);
             break;
         case 0:
-            system("cls");
             break;
         }
     }
