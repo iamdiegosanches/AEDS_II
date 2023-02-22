@@ -4,8 +4,7 @@
 #include "lista.h"
 
 #include <stdio.h>
-
-void classificacao_interna(char *nome_arquivo_entrada, Lista *nome_arquivos_saida, int M);
+#include "funcionario.h"
 
 // Executa o algoritmo de geracao de particoes por Selecao com Substituicao
 // nome_arquivo_entrada: nome do arquivo de entrada
