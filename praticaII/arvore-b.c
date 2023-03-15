@@ -9,7 +9,7 @@ void deleta_arquivo(bTree *tree, FILE *fp) {
         printf("\nErro: Nao foi possivel deletar o arquivo\n");
 }
 
-// O calculate_offset serve para calcular a posição em ‘bytes’ de um determinado nó em um arquivo de índice de árvore
+// O calcula_posicao serve para calcular a posição em ‘bytes’ de um determinado nó em um arquivo de índice de árvore
 int calcula_posicao(int disk, int order) {
 
     // Calcula o tamanho do nó em bytes.
@@ -77,7 +77,6 @@ no_b novo_no(int order, int is_leaf) {
 }
 
 void imprime_funcionario(no_b node, int order) {
-    printf("\n[");
     for (int i = 0; i < order - 1; i++) {
         if (node.keys[i].codigo != -1) {
             printf("\n--->Codigo: %d\n", node.keys[i].codigo);
@@ -85,7 +84,6 @@ void imprime_funcionario(no_b node, int order) {
             printf("--->Salario: R$ %.2f\n", node.keys[i].salario);
         }
     }
-    printf("] ");
 }
 
 void particiona(no_b x, int pos, bTree *tree, FILE *fp, int split_root) {
@@ -336,7 +334,7 @@ void emprestado_irmao_direito(no_b node, int pos, int order, FILE *fp) {
 }
 
 void excluir_codigo(no_b node, funcionario codigo, int ordem, FILE *fp) {
-    int g_min = (ordem / 2); // Grau minimo da arvore b
+    int g_min = (ordem / 2);
     int emprestado;
     int pos = 0;
     while (pos <= node.numKeys - 1 && codigo.codigo > node.keys[pos].codigo)
@@ -443,19 +441,24 @@ bTree *cria_arvore(int order) {
 }
 
 void inserir(bTree *tree, funcionario chave, FILE *fp) {
-    if (tree->node_count > 0)
-        tree->root = ler_disco(0, tree->order, fp);// Atualiza a raiz da arvore
-    no_b raiz = tree->root;   // Variavel para a raiz da arvore
+    // Atualiza a raiz da árvore se já houver nós gravados em disco
+    if (tree->node_count > 0) {
+        tree->root = ler_disco(0, tree->order, fp);
+    }
+    // Obtém a raiz atual da árvore
+    no_b raiz = tree->root;
 
-    if (raiz.numKeys == tree->order - 1) {                  // Se a raiz esta cheia
-        no_b s = novo_no(tree->order, 0);       // cria outra raiz
-        s.filhos[0] = raiz.pos_in_disk;                     // Faz da antiga raiz o seu primeiro filho
-        particiona(s, 0, tree, fp, 1);      // divide a raiz
-        s = ler_disco(0, tree->order, fp);       // obter nova raiz
-        tree->root = s;                                     // tornar a raiz
-        insere_nao_cheio(s, chave, tree, fp);     // inserir novo elemento caso a raiz nao esta cheia
-    } else {
-        tree->root = insere_nao_cheio(raiz, chave, tree, fp);  // insere o elemento onde nao esta cheio
+    // Se a raiz está cheia, cria uma nova raiz e insere a chave nela
+    if (raiz.numKeys == tree->order - 1) {
+        no_b nova_raiz = novo_no(tree->order, 0);
+        nova_raiz.filhos[0] = raiz.pos_in_disk;
+        particiona(nova_raiz, 0, tree, fp, 1);
+        tree->root = ler_disco(0, tree->order, fp);
+        insere_nao_cheio(tree->root, chave, tree, fp);
+    }
+        // Se a raiz não está cheia, insere a chave na raiz atual
+    else {
+        tree->root = insere_nao_cheio(raiz, chave, tree, fp);
     }
 }
 
@@ -475,38 +478,25 @@ int buscar(no_b node, int ordem, funcionario codigo, FILE *fp) {
 }
 
 void deletar(bTree *tree, funcionario codigo, FILE *fp) {
+    // Caso o funcionario nao estiver presente na arvore
+    if (buscar(tree->root, tree->order, codigo, fp) == -1) {
+        printf("\n Funcionario nao pertence a arvore.\n");
+        return;
+    }
     // Variavel obtendo a raiz da arvore
-    no_b root = tree->root;
-    excluir_codigo(root, codigo, tree->order, fp); // Apaga o item
-    no_b new_root = ler_disco(0, tree->order, fp); // armazena a raiz da arvore
+    no_b raiz = tree->root;
+    excluir_codigo(raiz, codigo, tree->order, fp); // Apaga o item
+    no_b nova_raiz = ler_disco(0, tree->order, fp); // armazena a raiz da arvore
     // se a raiz é vazia e nao for folha substitui pela subarvore
-    if (new_root.numKeys == 0 && (new_root.isLeaf == 0)) {
-        no_b x = ler_disco(new_root.filhos[0], tree->order, fp); // pegar o primeiro filho da subarvora
+    if (nova_raiz.numKeys == 0 && (nova_raiz.isLeaf == 0)) {
+        no_b x = ler_disco(nova_raiz.filhos[0], tree->order, fp); // pegar o primeiro filho da subarvora
         x.pos_in_disk = 0;                                       // sobscreve a informaçao da raiz anterior
         escreve_em_disco(x, tree->order, fp);         // escreve no arquivo a informaçao
         tree->root = x;                                          // transforma o filho na raiz
     } else {
-        tree->root = new_root; // mantem a raiz normalmente
+        tree->root = nova_raiz; // mantem a raiz normalmente
     }
-}
-
-// Achar o menor do arquivo (nao sera usada)
-funcionario btfindMax(no_b node, int order, FILE *fp) {
-    if (node.isLeaf == 1) {
-        return node.keys[node.numKeys - 1];
-    } else {
-        no_b x = ler_disco(node.filhos[node.numKeys], order, fp);
-        btfindMax(x, order, fp);
-    }
-}
-
-funcionario btfindMin(no_b node, int order, FILE *fp) {
-    if (node.isLeaf == 1) {
-        return node.keys[0];
-    } else {
-        no_b x = ler_disco(node.filhos[0], order, fp);
-        btfindMin(x, order, fp);
-    }
+    printf("\nFuncionario removido com sucesso.\n");
 }
 
 /*
@@ -554,3 +544,27 @@ void imprime_arvore(bTree *tree, queue *q, FILE *fp) {
         }
     }
 }
+
+
+
+
+
+
+// Achar o menor do arquivo
+//funcionario encontraMAx(no_b node, int order, FILE *fp) {
+//    if (node.isLeaf == 1) {
+//        return node.keys[node.numKeys - 1];
+//    } else {
+//        no_b x = ler_disco(node.filhos[node.numKeys], order, fp);
+//        encontraMAx(x, order, fp);
+//    }
+//}
+//
+//funcionario encontraMin(no_b node, int order, FILE *fp) {
+//    if (node.isLeaf == 1) {
+//        return node.keys[0];
+//    } else {
+//        no_b x = ler_disco(node.filhos[0], order, fp);
+//        encontraMin(x, order, fp);
+//    }
+//}
