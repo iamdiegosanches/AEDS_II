@@ -21,13 +21,13 @@ int main() {
     bTree *tree = cria_arvore(4);
 
     funcionario n0;
-    for (int i = 1; i <= 1050; ++i) {
+    for (int i = 1; i <= 2000; ++i) {
         n0.codigo = i;
         n0.salario = 3000;
         inserir(tree, n0, fp);
     }
 
-    queue *q0 = cria_fila(1050);
+    queue *q0 = cria_fila(1000);
     funcionario key;
 
     int opt;
@@ -65,7 +65,6 @@ int main() {
                 scanf("%d", &p);
                 key.codigo = p;
                 deletar(tree, key, fp);
-                printf("\nFuncionario removido com sucesso.\n");
                 system("PAUSE");
                 system("cls");
                 break;
@@ -76,7 +75,7 @@ int main() {
                 system("cls");
                 break;
             default:
-                printf("\t<<<<Digite uma opcao valida!!!>>>>\n");
+                printf("\t<<<<Digite uma opcao valida>>>>\n");
         }
     } while(opt != 0);
 
